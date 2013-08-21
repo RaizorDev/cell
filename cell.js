@@ -4,7 +4,7 @@ function Bundle($c,$i){
 	this.$inject = $i;
 }
 
-var $quasar = function (){
+var $cell = function (){
 	var bundles ={};
 	
 	var clone = (function(){ 
@@ -35,7 +35,9 @@ var Mediator = function() {
             console.log(msg);
 		}
     };
-        
+	
+
+      
     var components = {};
 
 //* The broadcast function sends a broadcast to the mediator and it search in their modules
@@ -51,6 +53,12 @@ var Mediator = function() {
 		for (var c in components) {
 			if (typeof components[c][event] == "function" && components[c]['state'] != 'stopped') {
 				try {
+				//Added Still uncomplete we need to trigger first the filter before the broadcast function
+					if(typeof components[c]["filter"] === "function"){
+						source = source || components[c];
+						var result = components[c]["filter"].apply(source,args);
+					}
+					
 					debug("Mediator calling: " + event + " on '" + c + "' module");
 					source = source || components[c];
                     components[c][event].apply(source, args);
@@ -68,16 +76,22 @@ var Mediator = function() {
 //all the new components start with a 'stopped' state. If it is stopped it won't listen
 //to broadcast events.     
 
-    var addComponent = function(name, component, replaceDuplicate) {    			
+//Added options object
+    var addComponent = function(name, component, options) {    			
             if (name in components) {
-                if (replaceDuplicate) {
-                    removeComponent(name);
-                } else {
+                if (options["replace"]) {
+					removeComponent(name);
+				} else {
                     throw new Error('Mediator name conflict: ' + name);
                 }
             }
             components[name] = component;
             components[name]['state']='stopped';
+			//Added to receive a filter function for all the functions on a module.
+			if(typeof options["filter"] === "function"){
+			debugger;
+				components[name]["filter"] = options["filter"];
+			}
         };
 //* removeComponent function delete the modules from the component's array      
   
@@ -89,7 +103,6 @@ var Mediator = function() {
 
 //*	registerToComponent function registers a new function to an existing module on the Mediator.	
 	var registerToComponent = function(name,event,registeredFunction,overwrite){
-		debugger;
 		if(components[name]){
 			if(!components[name][event] || overwrite === true){
 				components[name][event] = registeredFunction;
@@ -104,7 +117,6 @@ var Mediator = function() {
 //*	unregisterFromComponent function unregisters a function from an existing module on the Mediator.
 	var unregisterFromComponent = function(name,event){
 		if(components[name]){
-		debugger;
 			if(components[name][event]){
 				delete components[name][event];
 			}else{
@@ -135,8 +147,9 @@ var Mediator = function() {
 				debug("Module: '" + name + " 'Already Started ");
 				return;
 			}
-    		components[name] = $inject.process(components[name]);    	
-    		components[name]['state']='started';
+			//Jesus is going to verify the dependency injection it seems that the filter is deleted
+    		components[name] = $inject.process(components[name]);
+		 	components[name]['state']='started';
             debug("Module: '" + name + "' Started ");
             if(typeof components[name]["init"] == "function"){
            	 	debug(["Module: '" + name + "' calling init method"].join(' '));
@@ -207,13 +220,14 @@ var $inject = function(){
 	        return dependency;
 	    });
 	}
-	
+	/*Jesus is going to verify the process because it seems that the filter function disappears*/
 	var instanciateObjects = function(target) {
 			var FN_ARGS = /^function\s*[^\(]*\(\s*([^\)]*)\)/m;
 			var text = target.toString();
 			var args = text.match(FN_ARGS)[1].split(',');
 			var deps = getDependencies(args);
 			return target.apply(target, deps) || newApply(target,deps);
+			
 	}
 	
 	return {
