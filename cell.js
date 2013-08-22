@@ -1,34 +1,14 @@
+ /*
+ Added filter function to work properly.
+ Fixed bug when a module was started, stopped and started again.
+ Changed valitation if a module has a filter.
+ Proposed to separe $component $inject in another file to work with them.
+ */ 
 
-function Bundle($c,$i){
-	this.$component = $c;
-	this.$inject = $i;
-}
-
-var $cell = function (){
-	var bundles ={};
-	
-	var clone = (function(){ 
-		return function (obj) { Clone.prototype=obj; return new Clone() };
-		function Clone(){}
-	}());
-
-	return{
-		import: function(name){
-			var bundle = bundles[name];
-			for(var i in bundle){
-			}
-		},
-		/*Bundle will be injected with $component and $inject vars*/
-		createBundle: function(name,bundle){
-			bundles[name] = bundle(clone($component),clone($inject));
-		}
-	}
-	
-};
 
 var Mediator = function() {
 
-	var dMode = false;
+	var dMode = true;
         
     var debug = function(msg) {
         if(dMode){
@@ -36,9 +16,9 @@ var Mediator = function() {
 		}
     };
 	
-
+ var components = {};
       
-    var components = {};
+
 
 //* The broadcast function sends a broadcast to the mediator and it search in their modules
 //If there is a function listening to that event and executes it. If a module have a coding 
@@ -55,13 +35,19 @@ var Mediator = function() {
 				try {
 				//Added Still uncomplete we need to trigger first the filter before the broadcast function
 					if(typeof components[c]["filter"] === "function"){
+						source = components[c]["filter"];
+						if(!components[c]["filter"].apply(source,args)){
+							debug("Filter for \""+c+"\" failed with args: [" + args+"]");
+						}else{
+							debug("Mediator calling: " + event + " on '" + c + "' module");
+							source = source || components[c];
+							components[c][event].apply(source, args);
+						}
+					}else{
+						debug("Mediator calling: " + event + " on '" + c + "' module");
 						source = source || components[c];
-						var result = components[c]["filter"].apply(source,args);
+						components[c][event].apply(source, args);
 					}
-					
-					debug("Mediator calling: " + event + " on '" + c + "' module");
-					source = source || components[c];
-                    components[c][event].apply(source, args);
 				} catch (error) {                    	
                  	var url = error.stack.split('\n')[1].match(/\(.+\)/g)[0];
 				   debug(["Mediator error. Module '", c +"', Function: "+ event +", Args:"+args+", "+  error,  url].join(' '));
@@ -79,22 +65,23 @@ var Mediator = function() {
 //Added options object
     var addComponent = function(name, component, options) {    			
             if (name in components) {
-                if (options["replace"]) {
-					removeComponent(name);
-				} else {
+                if(options){
+					if(options["replace"]) {
+						removeComponent(name);
+					}
+				}else {
                     throw new Error('Mediator name conflict: ' + name);
                 }
             }
             components[name] = component;
             components[name]['state']='stopped';
 			//Added to receive a filter function for all the functions on a module.
-			if(typeof options["filter"] === "function"){
-			debugger;
-				components[name]["filter"] = options["filter"];
+			if(options && options["filter"] && typeof options["filter"] === "function"){
+						components[name]["filter"] = options["filter"];
 			}
         };
+
 //* removeComponent function delete the modules from the component's array      
-  
     var removeComponent = function(name) {
             if (name in components) {
                 delete components[name];
@@ -127,39 +114,43 @@ var Mediator = function() {
 		}
 	}
 
-	
-	
 //* getComponent function returns the component object for a established name if it exist in the array 
-      
     var getComponent = function(name) {
             return components[name]; // undefined if component has not been added
         };
+
 //* contains function return a value if a certain component is in the array   
-     
     var contains = function(name) {
             return (name in components);
         };
+
 //* startModule function changes the default stopped value of a component to started  
-     
     var startModule = function(name,args){
-    	if(contains(name)){
 			if(components[name]['state'] === "started"){
 				debug("Module: '" + name + " 'Already Started ");
 				return;
 			}
-			//Jesus is going to verify the dependency injection it seems that the filter is deleted
-    		components[name] = $inject.process(components[name]);
-		 	components[name]['state']='started';
+			
+			var filter;
+			if(typeof components[name]["filter"] === "function"){
+				filter = components[name]["filter"];
+			}
+			if(components[name].toString() !== "[object Object]"){
+				components[name] = $inject.process(components[name]);
+			}
+			components[name]['state']='started';
+			if(filter){
+				components[name]["filter"] = filter;
+			}
             debug("Module: '" + name + "' Started ");
             if(typeof components[name]["init"] == "function"){
            	 	debug(["Module: '" + name + "' calling init method"].join(' '));
            	 	components[name].init.apply(components[name], args);
             }
-    	}
      };
+
 //* stopModule functions changes the state of the component to stopped 
-  
-    var stopModule = function(name){
+      var stopModule = function(name){
         components[name]['state']='stopped';
 		debug(["Module: '" + name + "' Stopped"].join(' '));
     };
@@ -194,113 +185,3 @@ var Mediator = function() {
           };
 }();
   
-  
-var $inject = function(){
-	function newApply(constructor, argsArray) {
-		  function DummyObject(){};
-		  DummyObject.prototype = constructor.prototype;
-		  var object = new DummyObject();
-		  var sndObject = constructor.apply(object, argsArray);
-		  return (typeof sndObject == "object" ? sndObject : object);
-	}
-	
-	var dependencies = {}; //dependencies to inject: {}
-	
-	/*
-	 * get the dependencies of the registered component
-	 */
-	var getDependencies = function(arr) {
-	    var self = this;
-	    return arr.map(function(value) {
-			var dependency = dependencies[value];
-			if(typeof dependency == "function"){
-				dependency = instanciateObjects(dependency);
-				dependencies[value] = dependency;
-			}
-	        return dependency;
-	    });
-	}
-	/*Jesus is going to verify the process because it seems that the filter function disappears*/
-	var instanciateObjects = function(target) {
-			var FN_ARGS = /^function\s*[^\(]*\(\s*([^\)]*)\)/m;
-			var text = target.toString();
-			var args = text.match(FN_ARGS)[1].split(',');
-			var deps = getDependencies(args);
-			return target.apply(target, deps) || newApply(target,deps);
-			
-	}
-	
-	return {
-		/*
-		 * Process the component passed and injects their dependencies
-		 */
-		process : instanciateObjects,
-	  	/*
-		 * get a dependency by name
-		 */
-		get: function(name) {
-			var dep = dependencies[name];
-			if(typeof dep == "object" || typeof dep == "string"
-				|| typeof dep == "boolean" || typeof dep == "number"){
-				return dep;
-			}else if(typeof dependencies[name] == "function"){
-				dependencies[name] = instanciateObjects(dep);
-			}
-		    return dependencies[name];
-		},
-		
-		/*
-		 * register a component to be injected in other components 
-		 */
-		register: function(name, dependency) {
-			
-		    dependencies[name] = dependency;
-		}
-	}	
-}();
-
-
-var $component = function(){
-	function newApply(constructor, argsArray) {
-		  function DummyObject(){};
-		  DummyObject.prototype = constructor.prototype;
-		  var object = new DummyObject();
-		  var sndObject = constructor.apply(object, argsArray);
-		  return (typeof sndObject == "object" ? sndObject : object);
-	}
-	
-	return {
-		/*
-		* Registers a component(class,service,DAO etc) to to the application, also this component will be available to be injected
-		*/
-		register: function(name,comp){
-			$inject.register(name,comp);
-		},
-		jqGUI:function(name,comp){
-			$inject.register(name,comp);
-			
-					
-		},
-		loadConfig: function(json){
-			$(document).ready(function(){
-				for(var i in json){
-					console.log(window[json[i].class]);
-					console.log(i);
-					var comp = newApply(window[json[i].class],json[i].constructor);
-					
-					for(var prop in json[i].props){
-						console.log(1);
-						var setter = "set"+prop.substr(0,1).toUpperCase()+prop.substr(1);
-						comp[setter](json[i].props[prop]);
-					}
-					
-					$inject.register(i,comp);
-				}
-			});
-			
-		},
-		loadJSONFile: function(url){
-			
-		}
-	}
-}();
