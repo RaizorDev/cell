@@ -8,15 +8,20 @@
 
 var Mediator = function() {
 
-	var dMode = true;
+	var dMode = false;
         
     var debug = function(msg) {
-        if(dMode){
-            console.log(msg);
-		}
+       if(dMode){
+       	  if(type == "err"){
+		console.error(msg);
+	  }else{
+		console.log(msg);
+	  }
+	}
     };
 	
  var components = {};
+ var workers = {};
       
 
 
@@ -29,19 +34,37 @@ var Mediator = function() {
 			return;
 		}
 		args = args || [];
-		debug(["Mediator broadcasting:", event, args].join(' ')); 
+		debug(["Mediator broadcasting:", event,"[",args,"]"].join(' ')); 
 		for (var c in components) {
 			if (typeof components[c][event] == "function" && components[c]['state'] != 'stopped') {
 				try {
 				//Added Still uncomplete we need to trigger first the filter before the broadcast function
 					if(typeof components[c]["filter"] === "function"){
 						source = components[c]["filter"];
-						if(!components[c]["filter"].apply(source,args)){
-							debug("Filter for \""+c+"\" failed with args: [" + args+"]");
-						}else{
-							debug("Mediator calling: " + event + " on '" + c + "' module");
-							source = source || components[c];
-							components[c][event].apply(source, args);
+						var FN_ARGS = /^function\s*[^\(]*\(\s*([^\)]*)\)/m;
+						var textEvent = components[c][event].toString();
+						var argsFunc = textEvent.match(FN_ARGS)[1].split(',');
+						
+						var textFilter = components[c]["filter"].toString();
+						var argsFilter = textFilter.match(FN_ARGS)[1].split(',');
+						if(argsFunc[0] === "" && argsFunc.length == 1 && args.length == 0){
+							argsFunc.pop();
+						}
+						if(argsFunc.length != args.length){
+							debug("Invalid Arguments for "+ event + " on module "+  c, "err");
+						}
+						else if((argsFunc.length == args.length) && (argsFilter.length == args.length) ){
+							if(!components[c]["filter"].apply(source,args)){
+								debug("Filter for \""+c+"\" failed with args: ["+ args +"]", "err" );
+							}else{
+								debug("Mediator calling: " + event + " on '" + c + "' module");
+								source = source || components[c];
+								components[c][event].apply(source, args);
+							}
+						}else if(argsFunc.length === 0  && args.length === 0 ){
+								debug("Mediator calling: " + event + " on '" + c + "' module");
+								source = source || components[c];
+								components[c][event].apply(source, args);
 						}
 					}else{
 						debug("Mediator calling: " + event + " on '" + c + "' module");
@@ -58,6 +81,7 @@ var Mediator = function() {
             }
         }
     };
+    
 //* addComponent function creates a new module and add's it to the component array,
 //all the new components start with a 'stopped' state. If it is stopped it won't listen
 //to broadcast events.     
@@ -169,19 +193,61 @@ var Mediator = function() {
 		return components[name]['state'];
 	}
         
+	var addWebWorker = function (name, url, event, message) {
+                try {
+                    workers[name] = new Worker(url);
+                    if (typeof event === "function") {
+                        workers[name].onmessage = event
+                    }
+                    if (message) {
+                        workers[name].postMessage(message)
+                    }
+                    debug(["Worker '", name, "' added and running"].join(""))
+                } catch (error) {
+                    /*var u = error.stack.split("\n")[1].match(/\(.+\)/g)[0];
+                    debug(["Mediator error. Worker '", name + "', Error: " + error, u].join(" "),"err");*/
+					console.log(error);
+                }
+            };
+        var stopWebWorker = function (name) {
+                if (name in workers) {
+                    workers[name].terminate();
+                    debug(["Worker:", "'" + name + "'", "stopped"].join(" "))
+                } else {
+                    debug(["Worker:", "'" + name + "'", "is not registered"].join(" "))
+                }
+            };
+        var postWebWorker = function (name, data) {
+                if (name in workers) {
+                    if (data) {
+                        workers[name].postMessage(data);
+                        debug(["Post for worker:", "'" + name + "'", " data: [", data, "]"].join(" "));
+                        }
+                     else {
+                        debug("Data is not defined");
+                    }
+                } else {
+                    debug(["Worker:", "'" + name + "'", "is not registered"].join(" "))
+                }
+            };        
+        
+        
         return {
             name      : "Mediator",
             broadcast : broadcast,
             add       : addComponent,
             rem       : removeComponent,
-			register  : registerToComponent,
-			unregister: unregisterFromComponent,
+	    register  : registerToComponent,
+	    unregister: unregisterFromComponent,
             get       : getComponent,
             has       : contains,
             start     : startModule,
             stop      : stopModule,
-			debugMode : startDebug,
-			state     : getState
+	    debugMode : startDebug,
+	    state     : getState,
+	    addWorker : addWebWorker,
+            stopWorker: stopWebWorker,
+            postWorker: postWebWorker
           };
 }();
   
