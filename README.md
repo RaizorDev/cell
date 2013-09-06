@@ -1,7 +1,5 @@
-cell
-====
+#Cell
 
-Cell Modular
 
 Cell is a module pattern mediator plugin that allows the user to control javascript
 functions by modules and call them by broadcasting a Mediator component.
