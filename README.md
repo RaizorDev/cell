@@ -13,7 +13,7 @@ Also the user can set filters for the modules, if we broadcast one function with
 some arguments  first those arguments are tested against the filter to be able to execute the function 
 inside the module.
 
-Register a module
+##Register a module
 
 ```javascript
 Mediator.add('TestModule',function(){
@@ -39,4 +39,23 @@ Mediator.start("TestModule");
 ```
 
 
+##Dependency Injection for modules
+
+Also Cell offers the posibility to inject dependencies into the modules we create.
+
+```javascript
+$component.register('data',"Injected data");
+```
+
+This data would be injected on all the modules that receive a data object as a parameter.
+
+```javascript
+Mediator.add("Dependency",function(data){
+	return {
+		doSomething :  function(){
+			alert(data);
+		}
+	   }
+	});
+```
 
