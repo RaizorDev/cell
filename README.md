@@ -99,4 +99,20 @@ Mediator.add("Dependency",function(data){
 	   }
 	});
 ```
+##Register a webworker
+Cell offers web worker registration we can add a worker javascript with an identifier
+and it defines the onmessage function for us asking just to set the name, the url of our web
+worker and the on message function.
 
+```javascript
+Mediator.addWorker("count","worker.js",function(event){
+			document.getElementById("result").innerHTML=event.data;
+		  });
+```
+
+
+We can post a message to our web worker using the next command.
+
+```javascript
+Mediator.postWorker('count',"Text")
+```
