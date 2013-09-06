@@ -61,11 +61,12 @@ var Mediator = function() {
 								source = source || components[c];
 								components[c][event].apply(source, args);
 							}
-						}else if(argsFunc.length === 0  && args.length === 0 ){
+						}else if((argsFunc.length === 0  && args.length === 0) || ((argsFunc.length == args.length) && (argsFilter.length != args.length))){
 								debug("Mediator calling: " + event + " on '" + c + "' module");
 								source = source || components[c];
 								components[c][event].apply(source, args);
 						}
+						
 					}else{
 						debug("Mediator calling: " + event + " on '" + c + "' module");
 						source = source || components[c];
