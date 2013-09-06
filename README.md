@@ -29,5 +29,14 @@ In this case if we want to call the function doSomething inside the module we ju
 Mediator component.
 
 ```javascript
-Mediator.broadcast("doSomething");
+Mediator.broadcast("doSomething",["Homework"])
 ```
+
+But first before broadcasting the Mediator component we need to start our previously registered module.
+
+```javascript
+Mediator.start("TestModule");
+```
+
+
+
