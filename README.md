@@ -24,3 +24,10 @@ Mediator.add('TestModule',function(){
 			}
 		});
 ```
+
+In this case if we want to call the function doSomething inside the module we just broadcast a message to the
+Mediator component.
+
+```javascript
+Mediator.broadcast("doSomething");
+```
