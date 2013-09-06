@@ -51,6 +51,34 @@ Mediator.add('TestModule',function(){
 		});
 ```
 
+###Filters
+
+You can also add filter functions to your modules to control what does the module can 
+accept as data passed to a function thru the broadcast method.
+
+
+```javascript
+Mediator.add('TestModule',function(){
+		return{
+			doSomething:function(something){
+				alert("Do " + something);
+			}
+		}
+	},{filter:function(data){
+		return data === "some tasks";
+	  }
+      });
+```
+
+The filter must be a function that evaluates to boolean values `true` or `false`.
+
+So in this case if we execute:
+
+```javascript
+Mediator.broadcast("doSomething",["some taskss"])
+```
+
+It will show us a Filter exception for that module.
 
 ##Dependency Injection for modules
 
