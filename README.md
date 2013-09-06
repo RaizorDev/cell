@@ -36,6 +36,21 @@ But first before broadcasting the Mediator component we need to start our previo
 Mediator.start("TestModule");
 ```
 
+if we set a init function this function will be called when we start that module.
+
+```javascript
+Mediator.add('TestModule',function(){
+				return{
+					init:function(){
+					   console.log("Init Function")
+					},
+					doSomething:function(something){
+						alert("Do " + something);
+					}
+			}
+		});
+```
+
 
 ##Dependency Injection for modules
 
