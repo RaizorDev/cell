@@ -1,17 +1,15 @@
 #Cell
 
 
-Cell is a module pattern mediator plugin that allows the user to control javascript
-functions by modules and call them by broadcasting a Mediator component.
+**Cell** is a module pattern mediator plugin that allows users to control JavaScript
+functions by using modules which can be called by broadcasting a Mediator component. It allows the injection of dependencies on the functions, giving the user total control over
+the modules (modules can be started and/or stopped at will).
 
-It allows to inject dependencies on the functions, it gives the user total control over
-the modules allowing the user to start or stop modules if it's desired.
+Besides, the user can set filters for the modules; if a function is broadcast with one or more
+arguments, those arguments are first tested against the filter to determine if the function 
+inside the module will be executed.
 
-Also the user can set filters for the modules, if we broadcast one function with
-some arguments  first those arguments are tested against the filter to be able to execute the function 
-inside the module.
-
-##Register a module
+##Registering a module
 
 ```javascript
 Mediator.add('TestModule',function(){
@@ -23,20 +21,20 @@ Mediator.add('TestModule',function(){
 		});
 ```
 
-In this case if we want to call the function doSomething inside the module we just broadcast a message to the
+In this case, to call the function `doSomething` inside the module you just need to broadcast a message to the
 Mediator component.
 
 ```javascript
 Mediator.broadcast("doSomething",["Homework"])
 ```
 
-But first before broadcasting the Mediator component we need to start our previously registered module.
+However, before broadcasting the Mediator component the previously registered module needs to be started.
 
 ```javascript
 Mediator.start("TestModule");
 ```
 
-if we set a init function this function will be called when we start that module.
+Setting a special function called `init` will execute some code you specify when the module is started.
 
 ```javascript
 Mediator.add('TestModule',function(){
@@ -53,8 +51,8 @@ Mediator.add('TestModule',function(){
 
 ###Filters
 
-You can also add filter functions to your modules to control what does the module can 
-accept as data passed to a function thru the broadcast method.
+As mentioned previously, filter functions can be incorporated on your modules to control valid data
+passed to a function through the `broadcast` method.
 
 
 ```javascript
@@ -70,25 +68,26 @@ Mediator.add('TestModule',function(){
       });
 ```
 
-The filter must be a function that evaluates to boolean values `true` or `false`.
+It's important to note that `filter` must be a function that returns a boolean value of either `true` or `false`.
 
-So in this case if we execute:
+In this case, by executing:
 
 ```javascript
 Mediator.broadcast("doSomething",["some taskss"])
 ```
 
-It will show us a Filter exception for that module.
+A filter exception will be show for that module.
+
 
 ##Dependency Injection for modules
 
-Also Cell offers the posibility to inject dependencies into the modules we create.
+**Cell** allows the injection of dependencies into the modules you create.
 
 ```javascript
 $component.register('data',"Injected data");
 ```
 
-This data would be injected on all the modules that receive a data object as a parameter.
+This `'data'` would be injected on all the modules that receive a data object as a parameter.
 
 ```javascript
 Mediator.add("Dependency",function(data){
@@ -99,10 +98,11 @@ Mediator.add("Dependency",function(data){
 	   }
 	});
 ```
+
 ##Register a webworker
-Cell offers web worker registration we can add a worker javascript with an identifier
-and it defines the onmessage function for us asking just to set the name, the url of our web
-worker and the on message function.
+**Cell** provides web worker registration. A worker javascript can be added with an identifier
+and it defines the `onmessage` function for us, requesting the name to set, the url of our web
+worker and the `onmessage` function.
 
 ```javascript
 Mediator.addWorker("count","worker.js",function(event){
@@ -111,7 +111,7 @@ Mediator.addWorker("count","worker.js",function(event){
 ```
 
 
-We can post a message to our web worker using the next command.
+A message can be then posted to the web worker using the `postWorker` command.
 
 ```javascript
 Mediator.postWorker('count',"Text")
