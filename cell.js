@@ -10,7 +10,7 @@ var Mediator = function() {
 
 	var dMode = false;
         
-    var debug = function(msg) {
+    var debug = function(msg,type) {
        if(dMode){
        	  if(type == "err"){
 		console.error(msg);
@@ -151,6 +151,7 @@ var Mediator = function() {
 
 //* startModule function changes the default stopped value of a component to started  
     var startModule = function(name,args){
+		if(components[name]){
 			if(components[name]['state'] === "started"){
 				debug("Module: '" + name + " 'Already Started ");
 				return;
@@ -172,12 +173,19 @@ var Mediator = function() {
            	 	debug(["Module: '" + name + "' calling init method"].join(' '));
            	 	components[name].init.apply(components[name], args);
             }
+		}else{
+			debug(["Module","'"+name+"'","is not registered"].join(" "));
+		}
      };
 
 //* stopModule functions changes the state of the component to stopped 
       var stopModule = function(name){
-        components[name]['state']='stopped';
-		debug(["Module: '" + name + "' Stopped"].join(' '));
+		if(components[name]){
+			components[name]['state']='stopped';
+			debug(["Module: '" + name + "' Stopped"].join(' '));
+		}else{
+			debug(["Module","'"+name+"'","is not registered"].join(" "));
+		}
     };
 	
 //* startDebug enables log notifications from the Mediator
@@ -239,7 +247,7 @@ var Mediator = function() {
             add       : addComponent,
             rem       : removeComponent,
 	    register  : registerToComponent,
-	    unregister: unregisterFromComponent,
+ 	    unregister: unregisterFromComponent,
             get       : getComponent,
             has       : contains,
             start     : startModule,
