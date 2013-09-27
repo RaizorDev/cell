@@ -1,4 +1,4 @@
- /*
+/*
  Added filter function to work properly.
  Fixed bug when a module was started, stopped and started again.
  Changed valitation if a module has a filter.
@@ -153,7 +153,7 @@ var Mediator = function() {
     var startModule = function(name,args){
 		if(components[name]){
 			if(components[name]['state'] === "started"){
-				debug("Module: '" + name + " 'Already Started ");
+				debug("Module: '" + name + "' Already Started ");
 				return;
 			}
 			
@@ -202,15 +202,32 @@ var Mediator = function() {
 		return components[name]['state'];
 	}
         
-	var addWebWorker = function (name, url, event, message) {
+	var addWebWorker = function (name, js, event, message) {
                 try {
-                    workers[name] = new Worker(url);
+					var pattern = /^[\w.-]+\.js$/;
+					
+					if(typeof js == "object"){
+						var blob = new Blob([js.text()],{type:'text/javascript'});
+						var URL = window.URL || window.webkitURL;
+						var code = URL.createObjectURL(blob);
+						workers[name] = new Worker(code);
+						
+					}else if(js.match(pattern)){
+						workers[name] = new Worker(js);
+					}else{
+						var blob = new Blob([js],{type:'text/javascript'});
+						var URL = window.URL || window.webkitURL;
+						var code = URL.createObjectURL(blob);
+						workers[name] = new Worker(code);
+					}
+                    
                     if (typeof event === "function") {
                         workers[name].onmessage = event
                     }
                     if (message) {
-                        workers[name].postMessage(message)
+                        workers[name].postMessage(message);
                     }
+					workers[name].postMessage();
                     debug(["Worker '", name, "' added and running"].join(""))
                 } catch (error) {
                     /*var u = error.stack.split("\n")[1].match(/\(.+\)/g)[0];
@@ -246,15 +263,15 @@ var Mediator = function() {
             broadcast : broadcast,
             add       : addComponent,
             rem       : removeComponent,
-	    register  : registerToComponent,
- 	    unregister: unregisterFromComponent,
+			register  : registerToComponent,
+			unregister: unregisterFromComponent,
             get       : getComponent,
             has       : contains,
             start     : startModule,
             stop      : stopModule,
-	    debugMode : startDebug,
-	    state     : getState,
-	    addWorker : addWebWorker,
+			debugMode : startDebug,
+			state     : getState,
+			addWorker : addWebWorker,
             stopWorker: stopWebWorker,
             postWorker: postWebWorker
           };
