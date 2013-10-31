@@ -5,7 +5,8 @@
  Proposed to separe $component $inject in another file to work with them.
  */ 
 
-
+ var components = {};
+ var workers = {};
 var Mediator = function() {
 
 	var dMode = false;
@@ -20,8 +21,7 @@ var Mediator = function() {
 	}
     };
 	
- var components = {};
- var workers = {};
+
       
 
 
@@ -204,21 +204,32 @@ var Mediator = function() {
         
 	var addWebWorker = function (name, js, event, message) {
                 try {
-					var pattern = /^[\w.-]+\.js$/;
+					//var pattern = /^[\w.-]+\.js$/;
+					var pattern = /^[\w.-_\/]+\.js$/;
 					
 					if(typeof js == "object"){
 						var blob = new Blob([js.text()],{type:'text/javascript'});
 						var URL = window.URL || window.webkitURL;
 						var code = URL.createObjectURL(blob);
 						workers[name] = new Worker(code);
+						workers[name].js = code;
+						workers[name].event = event;
+						workers[name].terminated = false;
 						
 					}else if(js.match(pattern)){
-						workers[name] = new Worker(js);
+					
+							workers[name] = new Worker(js);
+							workers[name].js = js;
+							workers[name].event = event;
+							workers[name].terminated = false;
 					}else{
 						var blob = new Blob([js],{type:'text/javascript'});
 						var URL = window.URL || window.webkitURL;
 						var code = URL.createObjectURL(blob);
 						workers[name] = new Worker(code);
+						workers[name].js = code;
+						workers[name].event = event;
+						workers[name].terminated = false;
 					}
                     
                     if (typeof event === "function") {
@@ -237,12 +248,32 @@ var Mediator = function() {
             };
         var stopWebWorker = function (name) {
                 if (name in workers) {
-                    workers[name].terminate();
-                    debug(["Worker:", "'" + name + "'", "stopped"].join(" "))
-                } else {
+					
+						workers[name].terminate();
+						workers[name].terminated = true;
+						debug(["Worker:", "'" + name + "'", "stopped"].join(" "))
+				} else {
                     debug(["Worker:", "'" + name + "'", "is not registered"].join(" "))
                 }
             };
+		var resumeWebWorker = function(name){
+			if (name in workers) {
+				if(workers[name].terminated){
+					var event = workers[name].event; 
+					var js = workers[name].js;
+                    workers[name] = new Worker(js);
+					workers[name].event = event;
+					workers[name].onmessage = event;
+					workers[name].js = js;
+                    debug(["Worker:", "'" + name + "'", "Resumed"].join(" "))
+				}else{
+					debug(["Worker:", "'" + name + "'", "is not terminated"].join(" "))
+				}
+             } else {
+                    debug(["Worker:", "'" + name + "'", "is not registered"].join(" "))
+             }
+		}	
+		
         var postWebWorker = function (name, data) {
                 if (name in workers) {
                     if (data) {
@@ -273,7 +304,8 @@ var Mediator = function() {
 			state     : getState,
 			addWorker : addWebWorker,
             stopWorker: stopWebWorker,
-            postWorker: postWebWorker
+            postWorker: postWebWorker,
+			resumeWebWorker: resumeWebWorker
           };
 }();
   
