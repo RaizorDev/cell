@@ -207,3 +207,41 @@ var scriptTag = $("script[type='javascript/worker']");
 		  });
 		});
 ```
+
+###Post webworkers
+You can send data to a registered web worker with the method ***postWorker***.
+
+```javascript
+
+Mediator.postWorker('count',"-");
+
+```
+
+
+###Stop Worker
+Once you don't need the webworker you could terminate it with the method ***stopWorker***
+
+```javascript
+
+Mediator.stopWorker('count');
+
+```
+***Note***
+A terminated Web Worker will no longer respond to messages or perform any additional computations.
+
+
+###Resume Worker
+As we mentioned above a terminated webworker cannot be restarted,to do this we need to create a new webworker.
+
+`Cell` stores the ***javascript*** || ***URL*** and the event registered for all the workers added, doing this it
+can re-create a terminated web worker with the method ***resumeWorker***.
+
+```javascript
+
+Mediator.resumeWorker('count');
+
+```
+
+
+
+
