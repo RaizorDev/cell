@@ -284,7 +284,7 @@ var Mediator = function() {
                         debug("Data is not defined");
                     }
                 } else {
-                    debug(["Worker:", "'" + name + "'", "is not registered"].join(" "))
+                    debug(["Worker :", "'" + name + "'", "is not registered"].join(" "))
                 }
             };        
         
